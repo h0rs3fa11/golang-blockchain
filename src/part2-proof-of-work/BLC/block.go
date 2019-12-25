@@ -4,6 +4,7 @@ import (
   "bytes"
   "time"
   "strconv"
+  //"fmt"
   "crypto/sha256"
 )
 
@@ -34,13 +35,17 @@ func (block *Block)SetHash() {
 }
 
 func NewBlock(data string, prevBlockHash []byte) *Block {
-	block := &Block{time.Now().Unix(), prevBlockHash, []byte(data), []byte{}}
+	block := &Block{time.Now().Unix(), prevBlockHash, []byte(data), []byte{}, 0}
 
         //create pow object
         pow := NewProofOfWork(block)
-
+        nonce,hash := pow.Run()
         //pow.run,create a block
-        block.SetHash() //delete
+        //fmt.Println(pow.Validate())
+        //fmt.Println("\n")
+        block.Hash = hash
+        block.Nonce = nonce
+
 	return block;
 }
 

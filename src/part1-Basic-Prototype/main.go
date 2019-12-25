@@ -1,7 +1,7 @@
 package main
 
 import (
-	"golang-blockchain/src/part1-Basic-Prototype/BLC"
+	"golang-blockchain/src/part2-proof-of-work/BLC"
 	"fmt"
 	"time"
 )
@@ -18,6 +18,7 @@ func main() {
 		fmt.Printf("Timestamp:%s \n", time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"))
 		fmt.Printf("PrevBlockHash:%x \n", block.PrevBlockHash)
 		fmt.Printf("Hash:%x \n", block.Hash)
+		fmt.Printf("Nonce:%d \n", block.Nonce)
 		fmt.Println("\n")
 	}
 	//fmt.Println(block)
