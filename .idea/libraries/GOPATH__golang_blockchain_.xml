@@ -1,13 +1,19 @@
 <component name="libraryTable">
   <library name="GOPATH &lt;golang-blockchain&gt;">
     <CLASSES>
+      <root url="file://$PROJECT_DIR$/../源码" />
+      <root url="file://$PROJECT_DIR$/../blockchain_go_videos-master" />
       <root url="file://$PROJECT_DIR$/../go-ethereum-master" />
       <root url="file://$PROJECT_DIR$/../github.com" />
+      <root url="file://$PROJECT_DIR$/../publicChain" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>
+      <root url="file://$PROJECT_DIR$/../源码" />
+      <root url="file://$PROJECT_DIR$/../blockchain_go_videos-master" />
       <root url="file://$PROJECT_DIR$/../go-ethereum-master" />
       <root url="file://$PROJECT_DIR$/../github.com" />
+      <root url="file://$PROJECT_DIR$/../publicChain" />
     </SOURCES>
     <excluded>
       <root url="file://$PROJECT_DIR$" />
