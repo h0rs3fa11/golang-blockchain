@@ -4,7 +4,6 @@ import (
   "github.com/boltdb/bolt"
   "fmt"
   "log"
-  "time"
 )
 
 const dbFile = "blockchain.db"
@@ -39,23 +38,6 @@ func (blockchain *Blockchain) AddBlock(data string) {
       if err != nil {
           log.Panic(err)
       }
-}
-
-func (blockchain *Blockchain) FindBlock(hash []byte){
-        //get value from database
-        err := blockchain.Database.View(func(tx *bolt.Tx) error {
-                b := tx.Bucket([]byte(blocksBucket))
-                valueByte := b.Get(hash)
-
-                block := DeserializeBlock(valueByte)
-
-                fmt.Printf("Block Data:\nHash:%x\nTimestamp:%s\nPrevious Block Hash: %x\nData:%s\nNonce:%d\n", block.Hash, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.PrevBlockHash, block.Data, block.Nonce)
-                return nil
-        });
-
-        if err != nil {
-                log.Panic(err)
-        }
 }
 
 //Create a blockchain with genesis block

@@ -12,6 +12,7 @@ func main() {
 	blockchain.AddBlock("Send 10 BTC To M");
 	blockchain.AddBlock("Send 5 BTC To M");
 
-	fmt.Println(blockchain)
-	fmt.Println(blockchain.Tip)
+	//fmt.Println(blockchain)
+	fmt.Printf("blockchain tip block: %x\n", blockchain.Tip)
+	blockchain.FindBlock(blockchain.Tip)
 }

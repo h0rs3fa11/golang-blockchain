@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"bytes"
 	"fmt"
-	"go-ethereum-master/common/math"
+	"math"
 	"crypto/sha256"
 )
 
@@ -24,7 +24,7 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 	var hash [32]byte
 	nonce := 0
 
-	fmt.Printf("Mining block...\"%s\"\n", pow.block.Data)
+	fmt.Printf("Mining block...\n")
 	for nonce < maxNonce {
 		data := pow.prepareData(nonce)
 		hash = sha256.Sum256(data)
@@ -46,7 +46,7 @@ func (pow *ProofOfWork) prepareData(nonce int) ([]byte) {
 	data := bytes.Join(
 		[][]byte{
 			pow.block.PrevBlockHash,
-			pow.block.Data,
+			pow.block.hashTransaction(),
 			IntToHex(uint64(pow.block.Timestamp)),
 			IntToHex(uint64(targetBits)),
 			IntToHex(uint64(nonce)),

@@ -55,8 +55,6 @@ func NewBlock(data string, prevBlockHash []byte) *Block {
         pow := NewProofOfWork(block)
         nonce,hash := pow.Run()
         //pow.run,create a block
-        //fmt.Println(pow.Validate())
-        //fmt.Println("\n")
         block.Hash = hash
         block.Nonce = nonce
         blockNumber++

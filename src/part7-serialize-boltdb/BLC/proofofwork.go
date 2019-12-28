@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"bytes"
 	"fmt"
-	"go-ethereum-master/common/math"
+	"math"
 	"crypto/sha256"
 )
 

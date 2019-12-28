@@ -1,7 +1,7 @@
 package main
 
 import (
-	"golang-blockchain/src/part7-serialize-boltdb/BLC"
+	"golang-blockchain/src/part8-transaction/BLC"
 	//"fmt"
 	//"math/big"
 )
