@@ -14,7 +14,8 @@
                 "GOPATH": "E:/Work/GoPath",
                 "GOROOT": "D:/Go"
             },
-            "args": [],
+            "args": ["getbalance","-address","mqx"]
+            //"args": ["send","-from","mqx","-to","hys","-amount","1"],
             //"showLog": true
         }
     ]
