@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/big"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/boltdb/bolt"
@@ -23,7 +22,7 @@ func (cli *CLI) printUsage() {
 	fmt.Println("\tgetbalance -address ADDRESS - Get balance of ADDRESS")
 	fmt.Println("\tcreateblockchain -address ADDRESS - Create a blockchain and send genesis block reward to ADDRESS")
 	fmt.Println("\tprintchain - Print all the blocks of the blockchain:")
-	fmt.Println("\tsend -from FROM -to TO -amount AMOUNT - Send AMOUNT of coins from FROM address to TO")
+	fmt.Println("\tsendmany -from FROM -to TO -amount AMOUNT - Send AMOUNT of coins from FROM address to TO")
 
 }
 
@@ -129,26 +128,28 @@ func (cli *CLI) getBlock(hash string) {
 }
 
 func (cli *CLI) sendMany(from string, to string, amount int) { //进行中
-	fmt.Println("from:")
-	fmt.Println(from)
-	fmt.Println("to:")
-	fmt.Println(to)
-	fmt.Println("amount:")
-	fmt.Println(amount)
+	fmt.Printf("from:%s\n", from)
+	fmt.Printf("to:%s\n", to)
+	fmt.Println("amount:%d\n", amount)
 
-	for index, f := range from {
-		num, err = strconv.Atoi(amount[index])
-		if err != nil {
-			log.Panic(err)
-		}
-		tx := createTransaction(f, to[index], num, cli.Chain)
-		cli.Chain.AddBlock([]*Transaction{tx})
-	}
+	tx := createTransaction(from, to, amount, cli.Chain)
+	cli.Chain.AddBlock([]*Transaction{tx})
 }
 
-func (cli *CLI) getBalance(address string) {
-	//遍历区块？
-	fmt.Println("Not finish yet")
+func (cli *CLI) getBalance(address string) int {
+	txs := cli.Chain.findUnspentTX(address)
+
+	balance := 0
+
+	for _,tx := range txs {
+		for _,out := range tx.Vout {
+			if out.CanUnlock(address) {
+				balance += out.Value
+			}
+		}
+	}
+
+	return balance
 }
 
 func (cli *CLI) Run() {
@@ -165,7 +166,7 @@ func (cli *CLI) Run() {
 	getBalanceData := getBalanceCmd.String("address", "", "address")
 	sendFrom := sendManyCmd.String("from", "", "from address")
 	sendTo := sendManyCmd.String("to", "", "to address")
-	sendAmount := sendManyCmd.String("amount", "", "the amount you want to send")
+	sendAmount := sendManyCmd.Int("amount", 0, "the amount you want to send")
 
 	//fmt.Println("CLI Run \n")
 	switch os.Args[1] {
@@ -216,19 +217,16 @@ func (cli *CLI) Run() {
 	if getBlockCmd.Parsed() {
 		cli.getBlock(*getBlockData)
 	}
-	if getbalanceCmd.Parsed() {
-		cli.getBalance(*getbalanceData)
+	if getBalanceCmd.Parsed() {
+		if *getBalanceData == "" {
+			cli.printUsage()
+			os.Exit(1)
+		}
+
+		fmt.Printf("%s balance\n%d\n", *getBalanceData, cli.getBalance(*getBalanceData))
 	}
 
 	if sendManyCmd.Parsed() {
-		fromAddress := JSONToArray(*sendFrom)
-		toAddress := JSONToArray(*sendTo)
-		sendAmounts := JSONToArray(*sendAmount)
-
-		if len(fromAddress) == len(toAddress) && len(fromAddress) == len(sendAmounts) {
-			cli.sendMany(fromAddress, toAddress, sendAmounts)
-		} else {
-			fmt.Println("Arguments error")
-		}
+		cli.sendMany(*sendFrom, *sendTo, *sendAmount)
 	}
 }

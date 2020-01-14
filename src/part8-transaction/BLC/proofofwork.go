@@ -1,11 +1,11 @@
 package BLC
 
 import (
-	"math/big"
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"math"
-	"crypto/sha256"
+	"math/big"
 )
 
 var (
@@ -14,8 +14,8 @@ var (
 
 const targetBits = 10
 
-type  ProofOfWork struct {
-	block *Block
+type ProofOfWork struct {
+	block  *Block
 	target *big.Int
 }
 
@@ -28,7 +28,6 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 	for nonce < maxNonce {
 		data := pow.prepareData(nonce)
 		hash = sha256.Sum256(data)
-		fmt.Printf("\r%x ", hash)
 		hashInt.SetBytes(hash[:])
 		//target compare with hash
 		if hashInt.Cmp(pow.target) == -1 {
@@ -39,10 +38,10 @@ func (pow *ProofOfWork) Run() (int, []byte) {
 	}
 	fmt.Printf("\n")
 
-	return nonce,hash[:]
+	return nonce, hash[:]
 }
 
-func (pow *ProofOfWork) prepareData(nonce int) ([]byte) {
+func (pow *ProofOfWork) prepareData(nonce int) []byte {
 	data := bytes.Join(
 		[][]byte{
 			pow.block.PrevBlockHash,
@@ -73,7 +72,7 @@ func (pow *ProofOfWork) Validate() bool {
 
 func NewProofOfWork(block *Block) *ProofOfWork {
 	target := big.NewInt(1)
-	target.Lsh(target, uint(256 - targetBits))
+	target.Lsh(target, uint(256-targetBits))
 
 	pow := &ProofOfWork{block, target}
 	//fmt.Printf("%x\n", target)
