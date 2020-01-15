@@ -17,12 +17,31 @@ const blocksBucket = "blocks"
 type Blockchain struct {
 	Tip      []byte
 	Database *bolt.DB
+	Params   Chainparams
 }
 
 //add new block
 func (blockchain *Blockchain) AddBlock(tx []*Transaction) {
+	var txToBlock []*Transaction
+	//create coinbase transction
+	txToBlock = append(txToBlock, createCoinbaseTx("system", "", blockchain.Params))
+	for _, transaction := range tx {
+		txToBlock = append(txToBlock, transaction)
+	}
+
+	var block *Block
+
+	blockchain.Database.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(blocksBucket))
+		if b != nil {
+			hash := b.Get([]byte("l"))
+			blockBytes := b.Get(hash)
+			block = DeserializeBlock(blockBytes)
+		}
+		return nil
+	})
 	//create new block
-	block := NewBlock(tx, blockchain.Tip)
+	block = NewBlock(txToBlock, block.Hash, block.Height + 1)
 
 	err := blockchain.Database.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(blocksBucket))
@@ -66,23 +85,24 @@ func (blockchain *Blockchain) findUnspentTX(address string) []Transaction {
 				//fmt.Printf("TransactionHash:%x\n", transaction.ID)
 				txID := hex.EncodeToString(transaction.ID)
 
-				//遍历交易输出
 			Outputs:
+				//遍历交易输出
 				for outIdx, out := range transaction.Vout {
-					//遍历spentTXOs
+					//检查当前transaction.Vout中的output有没有已花费的(spentTXOs)
 					if spentTXOs[txID] != nil {
 						for _, spentOut := range spentTXOs[txID] {
-							if spentOut == outIdx { //为什么比较金额，如果两笔金额一样的UTXO呢
-								continue Outputs
+							if spentOut == outIdx {
+								continue Outputs //跳过当前vout
 							}
 						}
 					}
-
+					//如果已花费就跳过，没有就检查unlock，然后添加到unspentTXs中
 					if out.CanUnlock(address) {
 						unspentTXs = append(unspentTXs, *transaction)
 					}
 				}
 
+				//如果当前交易不是coinbase，遍历transaction.Vin，将input添加到spentTXOs中
 				if transaction.isCoinbase() == false {
 					for _, in := range transaction.Vin {
 						inTxID := hex.EncodeToString(in.Txid)
@@ -138,6 +158,10 @@ Work:
 func NewBlockChain() *Blockchain {
 	var tip []byte
 
+	params := Chainparams{}
+	params.init()
+
+	blockchain := Blockchain{nil, nil, params}
 	db, err := bolt.Open(dbFile, 0600, nil)
 	if err != nil {
 		log.Panic(err)
@@ -148,7 +172,7 @@ func NewBlockChain() *Blockchain {
 
 		if b == nil {
 			fmt.Println("No existing blockchain found. Create a new one ...")
-			genesisBlock := NewGenesisBlock()
+			genesisBlock := NewGenesisBlock(&blockchain)
 
 			b, err := tx.CreateBucket([]byte(blocksBucket))
 			if err != nil {
@@ -176,39 +200,39 @@ func NewBlockChain() *Blockchain {
 		log.Panic(err)
 	}
 
-	return &Blockchain{tip, db}
+	return &Blockchain{tip, db, params}
 }
 
-func GetBlockChain() *Blockchain {
-	var tip []byte
+// func GetBlockChain() *Blockchain {
+// 	var tip []byte
 
-	if dbExists() == false {
-		fmt.Println("Blockchain not exist")
-		os.Exit(1)
-	}
+// 	if dbExists() == false {
+// 		fmt.Println("Blockchain not exist")
+// 		os.Exit(1)
+// 	}
 
-	//open database
-	db, err := bolt.Open(dbFile, 0600, nil)
-	if err != nil {
-		log.Panic(err)
-	}
+// 	//open database
+// 	db, err := bolt.Open(dbFile, 0600, nil)
+// 	if err != nil {
+// 		log.Panic(err)
+// 	}
 
-	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(blocksBucket))
+// 	err = db.View(func(tx *bolt.Tx) error {
+// 		b := tx.Bucket([]byte(blocksBucket))
 
-		if b != nil {
-			tip = b.Get([]byte("l"))
-		}
+// 		if b != nil {
+// 			tip = b.Get([]byte("l"))
+// 		}
 
-		return nil
-	})
+// 		return nil
+// 	})
 
-	if err != nil {
-		log.Panic(err)
-	}
+// 	if err != nil {
+// 		log.Panic(err)
+// 	}
 
-	return &Blockchain{tip, db}
-}
+// 	return &Blockchain{tip, db}
+// }
 
 func dbExists() bool {
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {

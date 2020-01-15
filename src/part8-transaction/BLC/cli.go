@@ -50,12 +50,26 @@ func (cli *CLI) printChain() {
 
 			block := DeserializeBlock(blockBytes)
 
+			fmt.Printf("Height:%d\n", block.Height)
 			fmt.Printf("PrevBlockHash：%x \n", block.PrevBlockHash)
 			fmt.Printf("Timestamp：%s \n", time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"))
 			fmt.Printf("Hash：%x \n", block.Hash)
 			fmt.Printf("Nonce：%d \n", block.Nonce)
-			for tx := range block.Transaction {
-				fmt.Printf("Transaction id: %x\n", block.Transaction[tx].ID)
+			for _, tx := range block.Transaction {
+				fmt.Printf("Transaction id: %x\n", tx.ID)
+				//遍历vin
+				fmt.Println("----------transaction input----------")
+				for _, txin := range tx.Vin {
+					fmt.Printf("Vin transaction ID: %x\n", txin.Txid)
+					fmt.Printf("Vin Vout: %d\n", txin.Vout)
+					fmt.Printf("Script Sig: %s\n", txin.ScriptSig)
+				}
+				fmt.Println("----------transaction output----------")
+				//遍历vout
+				for _, txout := range tx.Vout {
+					fmt.Printf("Vout value: %d\n", txout.Value)
+					fmt.Printf("Vout ScriptPubKey: %s\n", txout.ScriptPubKey)
+				}
 			}
 
 			fmt.Println()
@@ -127,10 +141,10 @@ func (cli *CLI) getBlock(hash string) {
 
 }
 
-func (cli *CLI) sendMany(from string, to string, amount int) { //进行中
+func (cli *CLI) sendMany(from string, to string, amount int) {
 	fmt.Printf("from:%s\n", from)
 	fmt.Printf("to:%s\n", to)
-	fmt.Println("amount:%d\n", amount)
+	fmt.Printf("amount:%d\n", amount)
 
 	tx := createTransaction(from, to, amount, cli.Chain)
 	cli.Chain.AddBlock([]*Transaction{tx})
@@ -141,8 +155,8 @@ func (cli *CLI) getBalance(address string) int {
 
 	balance := 0
 
-	for _,tx := range txs {
-		for _,out := range tx.Vout {
+	for _, tx := range txs {
+		for _, out := range tx.Vout {
 			if out.CanUnlock(address) {
 				balance += out.Value
 			}
@@ -154,7 +168,8 @@ func (cli *CLI) getBalance(address string) int {
 
 func (cli *CLI) Run() {
 	cli.validateArgs()
-
+	//getblock 2
+	//gettransaction
 	addBlockCmd := flag.NewFlagSet("addblock", flag.ExitOnError)
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	getBlockCmd := flag.NewFlagSet("getblock", flag.ExitOnError)
@@ -163,7 +178,7 @@ func (cli *CLI) Run() {
 
 	addBlockData := addBlockCmd.String("data", "", "Block data")
 	getBlockData := getBlockCmd.String("hash", "", "Block hash")
-	getBalanceData := getBalanceCmd.String("address", "", "address")
+	getBalanceData := getBalanceCmd.String("address", "", "check balances of address")
 	sendFrom := sendManyCmd.String("from", "", "from address")
 	sendTo := sendManyCmd.String("to", "", "to address")
 	sendAmount := sendManyCmd.Int("amount", 0, "the amount you want to send")
