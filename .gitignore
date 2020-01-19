@@ -1,5 +1,7 @@
 src/part8-transaction/main.exe
 src/part8-transaction/blockchain.db
-.vscode/launch.json
+.vscode/*
+.idea/*
 blockchain.db.lock
 blockchain.db
+

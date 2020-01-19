@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/big"
 	"os"
 	"time"
 
@@ -34,64 +33,12 @@ func (cli *CLI) validateArgs() {
 }
 
 func (cli *CLI) printChain() {
-	var blockchainIterator ChainIterator
-
-	blockchainIterator = *cli.Chain.Iterator()
-
-	var hashInt big.Int
-
-	for {
-
-		err := blockchainIterator.DB.View(func(tx *bolt.Tx) error {
-			// 获取表
-			b := tx.Bucket([]byte(blocksBucket))
-			// 通过Hash获取区块字节数组
-			blockBytes := b.Get(blockchainIterator.CurrentHash)
-
-			block := DeserializeBlock(blockBytes)
-
-			fmt.Printf("Height:%d\n", block.Height)
-			fmt.Printf("PrevBlockHash：%x \n", block.PrevBlockHash)
-			fmt.Printf("Timestamp：%s \n", time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"))
-			fmt.Printf("Hash：%x \n", block.Hash)
-			fmt.Printf("Nonce：%d \n", block.Nonce)
-			for _, tx := range block.Transaction {
-				fmt.Printf("Transaction id: %x\n", tx.ID)
-				//遍历vin
-				fmt.Println("----------transaction input----------")
-				for _, txin := range tx.Vin {
-					fmt.Printf("Vin transaction ID: %x\n", txin.Txid)
-					fmt.Printf("Vin Vout: %d\n", txin.Vout)
-					//fmt.Printf("Script Sig: %s\n", txin.ScriptSig)
-				}
-				fmt.Println("----------transaction output----------")
-				//遍历vout
-				fmt.Println("Vouts:")
-				for _, txout := range tx.Vout {
-					fmt.Println(txout.Value)
-					fmt.Printf("%s",GetAddressFromPubkey(txout.PubKeyHash))
-				}
-			}
-
-			fmt.Println()
-
-			return nil
-		})
-
-		if err != nil {
-			log.Panic(err)
-		}
-
-		// 获取下一个迭代器
-		blockchainIterator = *blockchainIterator.Next()
-
-		// 将迭代器中的hash存储到hashInt
-		hashInt.SetBytes(blockchainIterator.CurrentHash)
-
-		if hashInt.Cmp(big.NewInt(0)) == 0 {
-			break
-		}
+	if dbExists() == false {
+		fmt.Println("Database not exist")
+		os.Exit(1)
 	}
+
+	cli.Chain.PrintChain()
 }
 
 // func (cli *CLI) addBlock(data string, address string) {

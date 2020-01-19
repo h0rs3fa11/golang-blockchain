@@ -6,8 +6,10 @@ import (
 	"log"
 	"math/big"
 	"os"
-
+	"crypto/ecdsa"
 	"github.com/boltdb/bolt"
+	"bytes"
+	"time"
 )
 
 const dbFile = "blockchain.db"
@@ -18,6 +20,10 @@ type Blockchain struct {
 	Tip      []byte
 	Database *bolt.DB
 	Params   Chainparams
+}
+
+func (blockchain *Blockchain) Iterator() *ChainIterator {
+	return &ChainIterator{blockchain.Tip, blockchain.Database}
 }
 
 //add new block
@@ -73,53 +79,38 @@ func (blockchain *Blockchain) findUnspentTX(address string) []Transaction {
 
 	pubKey := getPublickey(address)
 	for {
-		err := blockchain.Database.View(func(tx *bolt.Tx) error {
-			// 获取表
-			b := tx.Bucket([]byte(blocksBucket))
-			// 通过Hash获取区块字节数组
-			blockBytes := b.Get(bci.CurrentHash)
+		block := bci.Next()
 
-			block := DeserializeBlock(blockBytes)
+		//遍历区块交易
+		for _, transaction := range block.Transaction {
+			//fmt.Printf("TransactionHash:%x\n", transaction.ID)
+			txID := hex.EncodeToString(transaction.ID)
 
-			//遍历区块交易
-			for _, transaction := range block.Transaction {
-				//fmt.Printf("TransactionHash:%x\n", transaction.ID)
-				txID := hex.EncodeToString(transaction.ID)
-
-			Outputs:
-				//遍历交易输出
-				for outIdx, out := range transaction.Vout {
-					//检查当前transaction.Vout中的output有没有已花费的(spentTXOs)
-					if spentTXOs[txID] != nil {
-						for _, spentOut := range spentTXOs[txID] {
-							if spentOut == outIdx {
-								continue Outputs //跳过当前vout
-							}
+		Outputs:
+			//遍历交易输出
+			for outIdx, out := range transaction.Vout {
+				//检查当前transaction.Vout中的output有没有已花费的(spentTXOs)
+				if spentTXOs[txID] != nil {
+					for _, spentOut := range spentTXOs[txID] {
+						if spentOut == outIdx {
+							continue Outputs //跳过当前vout
 						}
 					}
-					//如果已花费就跳过，没有就检查unlock，然后添加到unspentTXs中
-					if out.IsLockWithKey(HashPubKey(pubKey)) {
-						unspentTXs = append(unspentTXs, *transaction)
-					}
 				}
-
-				//如果当前交易不是coinbase，遍历transaction.Vin，将input添加到spentTXOs中
-				if transaction.isCoinbase() == false {
-					for _, in := range transaction.Vin {
-						inTxID := hex.EncodeToString(in.Txid)
-						spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Vout)
-					}
+				//如果已花费就跳过，没有就检查unlock，然后添加到unspentTXs中
+				if out.IsLockWithKey(HashPubKey(pubKey)) {
+					unspentTXs = append(unspentTXs, *transaction)
 				}
 			}
 
-			return nil
-		})
-
-		if err != nil {
-			log.Panic(err)
+			//如果当前交易不是coinbase，遍历transaction.Vin，将input添加到spentTXOs中
+			if transaction.isCoinbase() == false {
+				for _, in := range transaction.Vin {
+					inTxID := hex.EncodeToString(in.Txid)
+					spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Vout)
+				}
+			}
 		}
-
-		bci = bci.Next()
 
 		hashInt.SetBytes(bci.CurrentHash)
 
@@ -154,6 +145,46 @@ Work:
 		}
 	}
 	return accumulated, unspentOutputs
+}
+
+func (blockchain *Blockchain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey) {
+	if tx.isCoinbase() {
+		return
+	}
+
+	prevTxs := make(map[string]Transaction)
+
+	for _, vin := range tx.Vin {
+		prevTx, err := blockchain.FindTransaction(vin.Txid)
+		if err != nil {
+			log.Panic(err)
+		}
+		prevTxs[hex.EncodeToString(prevTx.ID)] = prevTx
+	}
+
+	//tx.Sign(privKey, prevTxs)
+}
+
+func (blockchain *Blockchain) FindTransaction(id []byte) (Transaction, error) {
+	bci := blockchain.Iterator()
+
+	for {
+		block := bci.Next()
+
+		for _,tx := range block.Transaction {
+			if bytes.Compare(tx.ID, id) == 0 {
+				return *tx, nil
+			}
+		}
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevBlockHash)
+
+		if big.NewInt(0).Cmp(&hashInt) == 0 {
+			break;
+		}
+	}
+
+	return Transaction{}, nil
 }
 
 //Create a blockchain with genesis block
@@ -209,6 +240,47 @@ func NewBlockChain() *Blockchain {
 	}
 
 	return &Blockchain{tip, db, params}
+}
+
+func (chain *Blockchain) PrintChain() {
+
+	blockchainIterator := chain.Iterator()
+
+	for {
+		block := blockchainIterator.Next()
+
+		fmt.Printf("Height:%d\n", block.Height)
+		fmt.Printf("PrevBlockHash：%x \n", block.PrevBlockHash)
+		fmt.Printf("Timestamp：%s \n", time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"))
+		fmt.Printf("Hash：%x \n", block.Hash)
+		fmt.Printf("Nonce：%d \n", block.Nonce)
+		for _, tx := range block.Transaction {
+			fmt.Printf("Transaction id: %x\n", tx.ID)
+			//遍历vin
+			fmt.Println("----------transaction input----------")
+			for _, txin := range tx.Vin {
+				fmt.Printf("Vin transaction ID: %x\n", txin.Txid)
+				fmt.Printf("Vin Vout: %d\n", txin.Vout)
+				//fmt.Printf("Script Sig: %s\n", txin.ScriptSig)
+			}
+			fmt.Println("----------transaction output----------")
+			//遍历vout
+			fmt.Println("Vouts:")
+			for _, txout := range tx.Vout {
+				fmt.Println(txout.Value)
+				fmt.Printf("%s",GetAddressFromPubkey(txout.PubKeyHash))
+			}
+		}
+		fmt.Println()
+		fmt.Println("---------------------------------------")
+		
+		var hashInt big.Int
+		hashInt.SetBytes(block.PrevBlockHash)
+
+		if hashInt.Cmp(big.NewInt(0)) == 0 {
+			break
+		}
+	}
 }
 
 func dbExists() bool {
