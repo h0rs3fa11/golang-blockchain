@@ -27,11 +27,12 @@ func (blockchain *Blockchain) Iterator() *ChainIterator {
 }
 
 //add new block
-func (blockchain *Blockchain) AddBlock(tx []*Transaction, address string) {
+func (blockchain *Blockchain) AddBlock(txs []*Transaction) {
 	var txToBlock []*Transaction
+
 	//create coinbase transction	
-	txToBlock = append(txToBlock, createCoinbaseTx(HashPubKey(getPublickey(address)), "", blockchain.Params))
-	for _, transaction := range tx {
+	txToBlock = append(txToBlock, createCoinbaseTx(HashPubKey(getPublickey(blockchain.Params.Miner)), "", blockchain.Params))
+	for _, transaction := range txs {
 		txToBlock = append(txToBlock, transaction)
 	}
 
@@ -44,8 +45,16 @@ func (blockchain *Blockchain) AddBlock(tx []*Transaction, address string) {
 			blockBytes := b.Get(hash)
 			block = DeserializeBlock(blockBytes)
 		}
-		return nil
+		return nil 
 	})
+
+	for _,tx := range txs  {
+
+		if blockchain.VerifyTransaction(tx) != true {
+			log.Panic("ERROR: Invalid transaction")
+		}
+	}
+
 	//create new block
 	block = NewBlock(txToBlock, block.Hash, block.Height + 1)
 
@@ -162,7 +171,7 @@ func (blockchain *Blockchain) SignTransaction(tx *Transaction, privKey ecdsa.Pri
 		prevTxs[hex.EncodeToString(prevTx.ID)] = prevTx
 	}
 
-	//tx.Sign(privKey, prevTxs)
+	tx.Sign(privKey, prevTxs)
 }
 
 func (blockchain *Blockchain) FindTransaction(id []byte) (Transaction, error) {
@@ -187,6 +196,19 @@ func (blockchain *Blockchain) FindTransaction(id []byte) (Transaction, error) {
 	return Transaction{}, nil
 }
 
+func (bc *Blockchain) VerifyTransaction(tx *Transaction) bool {
+	prevTxs := make(map[string]Transaction)
+
+	for _, vin := range tx.Vin {
+		prevTx, err := bc.FindTransaction(vin.Txid)
+		if err != nil {
+			log.Panic(err)
+		}
+		prevTxs[hex.EncodeToString(prevTx.ID)] = prevTx
+	}
+	return tx.Verify(prevTxs)
+}
+
 //Create a blockchain with genesis block
 func NewBlockChain() *Blockchain {
 	var tip []byte
@@ -208,9 +230,11 @@ func NewBlockChain() *Blockchain {
 		if b == nil {
 			fmt.Println("No existing blockchain found. Create a new one ...")
 
-			blockchain := Blockchain{nil, nil, params}
-
 			wallets.createNewWallet()
+
+			params.setCoinbase()
+
+			blockchain := Blockchain{nil, nil, params}
 			genesisBlock := NewGenesisBlock(&blockchain)
 
 			b, err := tx.CreateBucket([]byte(blocksBucket))
@@ -230,6 +254,7 @@ func NewBlockChain() *Blockchain {
 
 			tip = genesisBlock.Hash
 		} else {
+			params.setCoinbase()
 			tip = b.Get([]byte("l"))
 		}
 
@@ -255,14 +280,14 @@ func (chain *Blockchain) PrintChain() {
 		fmt.Printf("Hash：%x \n", block.Hash)
 		fmt.Printf("Nonce：%d \n", block.Nonce)
 		for _, tx := range block.Transaction {
-			fmt.Printf("Transaction id: %x\n", tx.ID)
+			fmt.Printf("\nTransaction id: %x\n", tx.ID)
 			//遍历vin
 			fmt.Println("----------transaction input----------")
 			for _, txin := range tx.Vin {
 				fmt.Printf("Vin transaction ID: %x\n", txin.Txid)
 				fmt.Printf("Vin Vout: %d\n", txin.Vout)
 				//fmt.Printf("Script Sig: %s\n", txin.ScriptSig)
-			}
+			} 
 			fmt.Println("----------transaction output----------")
 			//遍历vout
 			fmt.Println("Vouts:")

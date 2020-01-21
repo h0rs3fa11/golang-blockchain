@@ -23,6 +23,7 @@ func (cli *CLI) printUsage() {
 	fmt.Println("\tprintchain - Print all the blocks of the blockchain:")
 	fmt.Println("\tsendmany -from FROM -to TO -amount AMOUNT - Send AMOUNT of coins from FROM address to TO")
 	fmt.Println("\tlistaddress list all address from wallet")
+	fmt.Println("\tcreateaddress create a new address")
 }
 
 func (cli *CLI) validateArgs() {
@@ -89,13 +90,13 @@ func (cli *CLI) getBlock(hash string) {
 
 }
 
-func (cli *CLI) sendMany(from string, to string, amount int, miner string) {
+func (cli *CLI) sendMany(from string, to string, amount int) {
 	fmt.Printf("from:%s\n", from)
 	fmt.Printf("to:%s\n", to)
 	fmt.Printf("amount:%d\n", amount)
 
 	tx := createTransaction(from, to, amount, cli.Chain, "")
-	cli.Chain.AddBlock([]*Transaction{tx}, miner)
+	cli.Chain.AddBlock([]*Transaction{tx})
 }
 
 func (cli *CLI) getBalance(address string) int {
@@ -126,6 +127,7 @@ func (cli *CLI) createAddress() {
 	wallets.createNewWallet()
 }
 
+//默认的coinbase，setCoinbase
 func (cli *CLI) Run() {
 	cli.validateArgs()
 	//getblock 2
@@ -144,7 +146,6 @@ func (cli *CLI) Run() {
 	sendFrom := sendManyCmd.String("from", "", "from address")
 	sendTo := sendManyCmd.String("to", "", "to address")
 	sendAmount := sendManyCmd.Int("amount", 0, "the amount you want to send")
-	sendMiner := sendManyCmd.String("miner", "", "the miner of this block")
 
 	//sendMemo := sendManyCmd.String("memo", "", "")
 	//fmt.Println("CLI Run \n")
@@ -215,13 +216,7 @@ func (cli *CLI) Run() {
 	}
 
 	if sendManyCmd.Parsed() {
-		var miner string
-		if *sendMiner == "" {
-			miner = cli.Chain.Params.Miner
-		} else {
-			miner = *sendMiner 
-		}
-		cli.sendMany(*sendFrom, *sendTo, *sendAmount, miner)
+		cli.sendMany(*sendFrom, *sendTo, *sendAmount)
 	}
 
 	if addresslistCmd.Parsed() {

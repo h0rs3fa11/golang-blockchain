@@ -10,6 +10,7 @@ import (
 	"fmt"
 )
 
+//如果重新启动链时，钱包里有链上没有的地址，应该删掉
 const walletFile = "wallet.dat"
 
 type Wallets struct {
@@ -61,4 +62,13 @@ func (w *Wallets) saveWallets() {
 	if err != nil {
 		log.Panic(err)
 	}
+}
+
+func getCoinbase() string {
+	wallets,_ := newWallets()
+
+	for address, _ := range wallets.WalletsMap{
+		return address
+	}
+	return ""
 }

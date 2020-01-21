@@ -8,7 +8,7 @@ import (
 
 func main() {
 	blockchain := BLC.NewBlockChain()
-
+	
 	cli := BLC.CLI{blockchain}
 
 	cli.Run()
