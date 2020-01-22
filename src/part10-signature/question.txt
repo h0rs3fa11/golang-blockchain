@@ -1,2 +1,6 @@
 当一条链创建，并且有钱包文件wallet.dat后
 删除这条链本地的数据库，但是不删除wallet.dat，会有什么影响
+
+to do
+UTXO保存数据库
+p2p
