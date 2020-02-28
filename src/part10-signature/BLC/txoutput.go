@@ -15,11 +15,6 @@ func (out *TXOutput) Lock(address []byte) {
 	out.PubKeyHash = pubKeyHash
 }
 
-<<<<<<< HEAD
-func (out *TXOutput) IsLockWithKey(pubKeyHash []byte) {
-	return bytes.Compare(out.PubKeyHash, pubKeyHash)
-}
-=======
 func (out *TXOutput) IsLockWithKey(pubKeyHash []byte) bool {
 	return bytes.Compare(out.PubKeyHash, pubKeyHash) == 0
 }
@@ -37,4 +32,3 @@ func GetAddressFromPubkey(pubKeyHash []byte) []byte {
 
 	return address
 }
->>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c

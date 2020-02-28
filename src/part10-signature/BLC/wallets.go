@@ -10,6 +10,7 @@ import (
 	"fmt"
 )
 
+//如果重新启动链时，钱包里有链上没有的地址，应该删掉
 const walletFile = "wallet.dat"
 
 type Wallets struct {
@@ -17,16 +18,10 @@ type Wallets struct {
 }
 
 func newWallets() (*Wallets, error) {
-<<<<<<< HEAD
-	if _, err := os.Stat(walletFile); os.IsNotExist(err) {
-		wallets := &Wallets{}
-		wallets.WalletMap = make(map[string]*Wallet)
-=======
 
 	if _, err := os.Stat(walletFile); os.IsNotExist(err) {
 		wallets := &Wallets{}
 		wallets.WalletsMap = make(map[string]*Wallet)
->>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 		return wallets,err
 	}
 
@@ -38,11 +33,7 @@ func newWallets() (*Wallets, error) {
 	var wallets Wallets
 	gob.Register(elliptic.P256( ))
 	decoder := gob.NewDecoder(bytes.NewReader(fileContent))
-<<<<<<< HEAD
-	err = decoder.Deode(&wallets)
-=======
 	err = decoder.Decode(&wallets)
->>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 	if err != nil {
 		log.Panic(err)
 	}
@@ -51,11 +42,7 @@ func newWallets() (*Wallets, error) {
 }
 
 func (w *Wallets) createNewWallet() {
-<<<<<<< HEAD
-	wallet := newWallets()
-=======
 	wallet := newWallet()
->>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 	fmt.Printf("Address:%s\n", wallet.GetAddress())
 	w.WalletsMap[string(wallet.GetAddress())] = wallet
 	w.saveWallets()
@@ -75,4 +62,13 @@ func (w *Wallets) saveWallets() {
 	if err != nil {
 		log.Panic(err)
 	}
+}
+
+func getCoinbase() string {
+	wallets,_ := newWallets()
+
+	for address, _ := range wallets.WalletsMap{
+		return address
+	}
+	return ""
 }
