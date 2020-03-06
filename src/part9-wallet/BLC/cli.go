@@ -24,6 +24,9 @@ func (cli *CLI) printUsage() {
 	fmt.Println("\tprintchain - Print all the blocks of the blockchain:")
 	fmt.Println("\tsendmany -from FROM -to TO -amount AMOUNT - Send AMOUNT of coins from FROM address to TO")
 	fmt.Println("\tlistaddress list all address from wallet")
+	fmt.Println("\tcreateaddress create a new address")
+	fmt.Println("\tlistaddress list all adress")
+	fmt.Println("\tcleanblockchain clean the blockchain database file and wallet file")
 }
 
 func (cli *CLI) validateArgs() {
@@ -179,6 +182,8 @@ func (cli *CLI) createAddress() {
 	wallets.createNewWallet()
 }
 
+
+
 func (cli *CLI) Run() {
 	cli.validateArgs()
 	//getblock 2
@@ -190,6 +195,7 @@ func (cli *CLI) Run() {
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
 	sendManyCmd := flag.NewFlagSet("sendmany", flag.ExitOnError)
 	createAddrCmd := flag.NewFlagSet("createaddress", flag.ExitOnError)
+	//cleandbCmd := flag.NewFlagSet("cleanblockchain", flag.ExitOnError)
 
 	//addBlockData := addBlockCmd.String("data", "", "Block data")
 	getBlockData := getBlockCmd.String("hash", "", "Block hash")
@@ -238,6 +244,11 @@ func (cli *CLI) Run() {
 		if err != nil {
 			log.Panic(err)
 		}
+	case "cleanblockchain":
+		err := cleandbCmd.Parse(os.Args[2:])
+		if err != nil {
+			log.Panic(err)
+		}
 	default:
 		cli.printUsage()
 		os.Exit(1)
@@ -283,5 +294,9 @@ func (cli *CLI) Run() {
 
 	if createAddrCmd.Parsed() {
 		cli.createAddress()
+	}
+
+	if cleandbCmd.Parsed() {
+		cli.cleanBlockchain()
 	}
 }

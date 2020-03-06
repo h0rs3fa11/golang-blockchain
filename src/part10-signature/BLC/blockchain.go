@@ -254,6 +254,7 @@ func NewBlockChain() *Blockchain {
 
 			tip = genesisBlock.Hash
 		} else {
+			// TODO: Check if the address in the wallet is on the chain
 			params.setCoinbase()
 			tip = b.Get([]byte("l"))
 		}
@@ -290,11 +291,19 @@ func (chain *Blockchain) PrintChain() {
 			} 
 			fmt.Println("----------transaction output----------")
 			//遍历vout
+			//TODO:为什么交易输出有两个连着的地址
+			// Vouts:
+			// 1
+			// 18QVsFU4TRgroxyDEuEx8Y4Ugn2CjdJjUT8
+			// 1DUe77qTXt6eg6kvxD383XuYsfa9ibPJQg1
+			// 1FnaS7YLYBxWHCuYHLc7DQHFA8Tg6D5G1Nr1W7Nj9Xif25dJSi75jD6JRRe9J5NhLHMkAAeAsmCXtdceod9zpEjVxTi93
 			fmt.Println("Vouts:")
 			for _, txout := range tx.Vout {
 				fmt.Println(txout.Value)
 				fmt.Printf("%s",GetAddressFromPubkey(txout.PubKeyHash))
 			}
+			fmt.Println("----------transaction fee----------")
+			//fmt.Printf("%d",)
 		}
 		fmt.Println()
 		fmt.Println("---------------------------------------")

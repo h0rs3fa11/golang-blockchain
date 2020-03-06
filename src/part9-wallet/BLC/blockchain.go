@@ -158,11 +158,28 @@ Work:
 
 //Create a blockchain with genesis block
 func NewBlockChain() *Blockchain {
-	var tip []byte
+	var (
+		tip []byte
+		option string
+	)
 
 	//暂时 后面写成配置文件
 	params := Chainparams{}
 	params.init()
+
+	if dbExists() {
+		fmt.Println("Already have blockchain, do you want to create a new one?(y/n)")
+		fmt.Scanln(&option)
+		if option == 'y' {
+			cleanBlockchain()
+		}
+		switch option {
+		case 'y':
+			//delete existing file
+			
+		
+		}
+	}
 
 	wallets, err := newWallets()
 	
@@ -217,4 +234,29 @@ func dbExists() bool {
 	}
 
 	return true
+}
+
+func cleanBlockchain() {
+	log.Println("Start cleaning database file...")
+	dbFile := "blockchain.db"
+	dblockFile := "blockchain.db.lock"
+	walletFile := "wallet.dat"
+
+	err := os.Remove(dbFile)
+	if err != nil {
+		log.Panic("Something wrong when delete database file:%s", err)
+	}
+	log.Println("Database file is deleted!")
+
+	err = os.Remove(dblockFile)
+	if err != nil {
+		log.Panic("Something wrong when delete database lock file:%s", err)
+	}
+	log.Println("Database lock file is deleted!")
+
+	err = os.Remove(walletFile)
+	if err != nil {
+		log.Panic("Something wrong when delete wallet file:%s", err)
+	}
+	log.Println("Wallet file is deleted!")
 }

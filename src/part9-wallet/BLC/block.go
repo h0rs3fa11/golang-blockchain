@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"log"
 	"time"
+	"fmt"
 )
 
 var blockNumber = 0
@@ -82,7 +83,7 @@ func NewGenesisBlock(bc *Blockchain) *Block {
 			break
 		}
 	}
-
+	fmt.Println(bc.Params.Miner)
 	coinbaseTx := createCoinbaseTx(HashPubKey(getPublickey(bc.Params.Miner)), "Reward for mining", bc.Params)
 	return NewBlock([]*Transaction{coinbaseTx}, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 1)
 }

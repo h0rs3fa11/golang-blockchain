@@ -21,6 +21,7 @@ const miner = "temp-miner"
 type Transaction struct {
 	ID   []byte
 	Memo string
+	Fee  int
 	Vin  []*TXInput
 	Vout []*TXOutput
 }
