@@ -31,18 +31,29 @@ func createCoinbaseTx(pubKeyHash []byte, memo string, params Chainparams) *Trans
 	//create transaction output
 	txOut := TXOutput{params.Subsidy, pubKeyHash}
 
+<<<<<<< HEAD
+	tx := Transaction{nil, []TXInput{txIn}, []TXOutput{txOut}}
+=======
 	tx := Transaction{nil, memo, []TXInput{txIn}, []TXOutput{txOut}}
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 	tx.SetID()
 
 	return &tx
 }
 
+<<<<<<< HEAD
+func createTransaction(from string, to string, value int, bc *Blockchain) *Transaction {
+=======
 func createTransaction(from string, to string, value int, bc *Blockchain, memo string) *Transaction {
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 
 	var feeOutput TXOutput
 	var inputs []TXInput
 	needValue := value + bc.Params.Fee
+<<<<<<< HEAD
+=======
 	var frompubKey []byte
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 	//查找账户可用的UTXO
 	findAmount, unspentOut := bc.findUnspentOutput(from, needValue)
 
@@ -52,16 +63,25 @@ func createTransaction(from string, to string, value int, bc *Blockchain, memo s
 			log.Panic(err)
 		}
 
+<<<<<<< HEAD
+		for _, out := range outs {
+			input := TXInput{txID, out, from}
+=======
 		frompubKey = getPublickey(from)
 		if frompubKey == nil {
 			log.Panic("Can't find this address")
 		}
 		for _, out := range outs {
 			input := TXInput{txID, out, nil, frompubKey}
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 
 			inputs = append(inputs, input)
 		}
 	}
+<<<<<<< HEAD
+	//新建交易结构
+	tx := Transaction{nil, inputs, []TXOutput{TXOutput{value, to}}}
+=======
 	//目的地址的公钥，怎么从目的地址的地址推到公钥？如果本地没有这个密钥文件的话
 	topubKey := getPublickey(to)
 	if topubKey == nil {
@@ -75,17 +95,27 @@ func createTransaction(from string, to string, value int, bc *Blockchain, memo s
 
 	//新建交易结构
 	tx := Transaction{nil, memo, inputs, []TXOutput{TXOutput{value, topubKey}}}
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 
 	//处理找零
 	change := findAmount - value
 	if change > bc.Params.Fee {
+<<<<<<< HEAD
+		changeOutput := TXOutput{change - bc.Params.Fee, from}
+		feeOutput = TXOutput{bc.Params.Fee, miner}
+=======
 		changeOutput := TXOutput{change - bc.Params.Fee, frompubKey}
 		feeOutput = TXOutput{bc.Params.Fee, minerPubkey}
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 		tx.Vout = append(tx.Vout, changeOutput)
 		tx.Vout = append(tx.Vout, feeOutput)
 
 	} else if change == bc.Params.Fee {
+<<<<<<< HEAD
+		feeOutput = TXOutput{bc.Params.Fee, miner}
+=======
 		feeOutput = TXOutput{bc.Params.Fee, minerPubkey}
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 		tx.Vout = append(tx.Vout, feeOutput)
 	} else {
 		fmt.Println("Transaction fee is not enough!\n")
@@ -111,3 +141,14 @@ func (tx *Transaction) SetID() {
 	hash = sha256.Sum256(encoded.Bytes())
 	tx.ID = hash[:]
 }
+<<<<<<< HEAD
+
+func (in *TXInput) CanUnlockOutput(address string) bool {
+	return in.ScriptSig == address
+}
+
+func (out *TXOutput) CanUnlock(address string) bool {
+	return out.ScriptPubKey == address
+}
+=======
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c

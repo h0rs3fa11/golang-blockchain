@@ -68,7 +68,11 @@ func checksum(payload []byte) []byte {
 	return secondSHA[:addressChecksumLen]
 }
 
+<<<<<<< HEAD
+//疑问 创世区块的第一个地址怎么产生 密钥怎么存储
+=======
 func getPublickey(address string) []byte {
 	wallets,_ := newWallets()
 	return wallets.WalletsMap[address].PublicKey
 }
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c

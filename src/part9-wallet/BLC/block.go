@@ -76,6 +76,12 @@ func NewBlock(transaction []*Transaction, prevBlockHash []byte, height int) *Blo
 func NewGenesisBlock(bc *Blockchain) *Block {
 	// Initialize Genesis Transaction
 	//获取钱包的地址
+<<<<<<< HEAD
+	wallet,_ := NewWallets()
+	address, _ = wallets.WalletsMap
+
+	coinbaseTx := createCoinbaseTx("system", "Reward for mining", bc.Params)
+=======
 	wallets,_ := newWallets()
 	for address, _ := range wallets.WalletsMap{
 		bc.Params.Miner = address
@@ -85,5 +91,6 @@ func NewGenesisBlock(bc *Blockchain) *Block {
 	}
 	fmt.Println(bc.Params.Miner)
 	coinbaseTx := createCoinbaseTx(HashPubKey(getPublickey(bc.Params.Miner)), "Reward for mining", bc.Params)
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 	return NewBlock([]*Transaction{coinbaseTx}, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 1)
 }

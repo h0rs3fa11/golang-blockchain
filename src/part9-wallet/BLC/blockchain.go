@@ -21,10 +21,17 @@ type Blockchain struct {
 }
 
 //add new block
+<<<<<<< HEAD
+func (blockchain *Blockchain) AddBlock(tx []*Transaction) {
+	var txToBlock []*Transaction
+	//create coinbase transction
+	txToBlock = append(txToBlock, createCoinbaseTx("system", "", blockchain.Params))
+=======
 func (blockchain *Blockchain) AddBlock(tx []*Transaction, address string) {
 	var txToBlock []*Transaction
 	//create coinbase transction	
 	txToBlock = append(txToBlock, createCoinbaseTx(HashPubKey(getPublickey(address)), "", blockchain.Params))
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 	for _, transaction := range tx {
 		txToBlock = append(txToBlock, transaction)
 	}
@@ -71,7 +78,10 @@ func (blockchain *Blockchain) findUnspentTX(address string) []Transaction {
 	bci := blockchain.Iterator()
 	var hashInt big.Int
 
+<<<<<<< HEAD
+=======
 	pubKey := getPublickey(address)
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 	for {
 		err := blockchain.Database.View(func(tx *bolt.Tx) error {
 			// 获取表
@@ -98,7 +108,11 @@ func (blockchain *Blockchain) findUnspentTX(address string) []Transaction {
 						}
 					}
 					//如果已花费就跳过，没有就检查unlock，然后添加到unspentTXs中
+<<<<<<< HEAD
+					if out.CanUnlock(address) {
+=======
 					if out.IsLockWithKey(HashPubKey(pubKey)) {
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 						unspentTXs = append(unspentTXs, *transaction)
 					}
 				}
@@ -136,14 +150,21 @@ func (blockchain *Blockchain) findUnspentOutput(address string, amount int) (int
 	unspentOutputs := make(map[string][]int)
 	unspentTx := blockchain.findUnspentTX(address)
 	accumulated := 0
+<<<<<<< HEAD
+=======
 	pubKey := getPublickey(address)
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 
 Work:
 	for _, tx := range unspentTx {
 		txID := hex.EncodeToString(tx.ID)
 
 		for outIdx, out := range tx.Vout {
+<<<<<<< HEAD
+			if out.CanUnlock(address) && accumulated < amount {
+=======
 			if out.IsLockWithKey(HashPubKey(pubKey)) && accumulated < amount {
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 				accumulated += out.Value
 				unspentOutputs[txID] = append(unspentOutputs[txID], outIdx)
 
@@ -163,6 +184,17 @@ func NewBlockChain() *Blockchain {
 		option string
 	)
 
+<<<<<<< HEAD
+	params := Chainparams{}
+	params.init()
+
+	_, err := newWallets()
+	if err != nil {
+		log.Panic(err)
+	}
+	
+	blockchain := Blockchain{nil, nil, params}
+=======
 	//暂时 后面写成配置文件
 	params := Chainparams{}
 	params.init()
@@ -183,6 +215,7 @@ func NewBlockChain() *Blockchain {
 
 	wallets, err := newWallets()
 	
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 	db, err := bolt.Open(dbFile, 0600, nil)
 	if err != nil {
 		log.Panic(err)
@@ -193,10 +226,13 @@ func NewBlockChain() *Blockchain {
 
 		if b == nil {
 			fmt.Println("No existing blockchain found. Create a new one ...")
+<<<<<<< HEAD
+=======
 
 			blockchain := Blockchain{nil, nil, params}
 
 			wallets.createNewWallet()
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 			genesisBlock := NewGenesisBlock(&blockchain)
 
 			b, err := tx.CreateBucket([]byte(blocksBucket))
@@ -228,6 +264,40 @@ func NewBlockChain() *Blockchain {
 	return &Blockchain{tip, db, params}
 }
 
+<<<<<<< HEAD
+// func GetBlockChain() *Blockchain {
+// 	var tip []byte
+
+// 	if dbExists() == false {
+// 		fmt.Println("Blockchain not exist")
+// 		os.Exit(1)
+// 	}
+
+// 	//open database
+// 	db, err := bolt.Open(dbFile, 0600, nil)
+// 	if err != nil {
+// 		log.Panic(err)
+// 	}
+
+// 	err = db.View(func(tx *bolt.Tx) error {
+// 		b := tx.Bucket([]byte(blocksBucket))
+
+// 		if b != nil {
+// 			tip = b.Get([]byte("l"))
+// 		}
+
+// 		return nil
+// 	})
+
+// 	if err != nil {
+// 		log.Panic(err)
+// 	}
+
+// 	return &Blockchain{tip, db}
+// }
+
+=======
+>>>>>>> 9d204a21856777a3477c2aa964f463d33e45bc5c
 func dbExists() bool {
 	if _, err := os.Stat(dbFile); os.IsNotExist(err) {
 		return false
