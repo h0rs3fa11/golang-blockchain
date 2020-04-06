@@ -96,7 +96,12 @@ func (cli *CLI) sendMany(from string, to string, amount int) {
 	fmt.Printf("to:%s\n", to)
 	fmt.Printf("amount:%d\n", amount)
 
-	tx := core.CreateTransaction(from, to, amount, cli.Chain, "")
+	tx, err := core.CreateTransaction(from, to, amount, cli.Chain, "")
+	if err != nil {
+		fmt.Println(err);
+		return;
+	}
+
 	cli.Chain.AddBlock([]*core.Transaction{tx})
 }
 

@@ -74,7 +74,7 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 		outputs = append(outputs, &TXOutput{vout.Value, vout.PubKeyHash})
 	}
 
-	txCopy := Transaction{tx.ID, tx.Memo, 0, inputs, outputs}
+	txCopy := Transaction{tx.ID, tx.Memo, tx.Fee, inputs, outputs}
 	return txCopy
 }
 
@@ -127,13 +127,13 @@ func createCoinbaseTx(pubKeyHash []byte, memo string, params Chainparams) *Trans
 	//create transaction output
 	txOut := &TXOutput{params.Subsidy, pubKeyHash}
 
-	tx := Transaction{nil, memo, 0, []*TXInput{txIn}, []*TXOutput{txOut}}
+	tx := Transaction{nil, memo, params.Fee, []*TXInput{txIn}, []*TXOutput{txOut}}
 	tx.SetID()
 
 	return &tx
 }
 
-func CreateTransaction(from string, to string, value int, bc *Blockchain, memo string) *Transaction {
+func CreateTransaction(from string, to string, value int, bc *Blockchain, memo string) (*Transaction, error) {
 
 	//var feeOutput &TXOutput{}
 	var inputs []*TXInput
@@ -144,7 +144,10 @@ func CreateTransaction(from string, to string, value int, bc *Blockchain, memo s
 
 	//查找账户可用的UTXO
 	findAmount, unspentOut := bc.findUnspentOutput(from, needValue)
-
+	if findAmount == -1 {
+		fmt.Printf("Can't find enough money from %s\n", from);
+		return nil, &blockchainError{"Balance inefficient"};
+	}
 	for txid, outs := range unspentOut {
 		txID, err := hex.DecodeString(txid)
 		if err != nil {
@@ -169,7 +172,7 @@ func CreateTransaction(from string, to string, value int, bc *Blockchain, memo s
 	}
 
 	//新建交易结构
-	tx := Transaction{nil, memo, 0, inputs, []*TXOutput{&TXOutput{value, HashPubKey(topubKey)}}}
+	tx := Transaction{nil, memo, bc.Params.Fee, inputs, []*TXOutput{&TXOutput{value, HashPubKey(topubKey)}}}
 
 	//处理找零
 	change := findAmount - value
@@ -191,7 +194,7 @@ func CreateTransaction(from string, to string, value int, bc *Blockchain, memo s
 
 
 	bc.SignTransaction(&tx, wallet.PrivateKey)
-	return &tx
+	return &tx, nil
 }
 
 func (tx *Transaction) SetID() {

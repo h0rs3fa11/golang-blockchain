@@ -153,6 +153,9 @@ Work:
 			}
 		}
 	}
+	if accumulated < amount {
+		return -1, nil
+	}
 	return accumulated, unspentOutputs
 }
 
@@ -300,7 +303,7 @@ func (chain *Blockchain) PrintChain() {
 			fmt.Println("Vouts:")
 			for _, txout := range tx.Vout {
 				fmt.Println(txout.Value)
-				fmt.Printf("%s",GetAddressFromPubkey(txout.PubKeyHash))
+				fmt.Printf("%s\n",GetAddressFromPubkey(txout.PubKeyHash))
 			}
 			fmt.Println("----------transaction fee----------")
 			//fmt.Printf("%d",)
