@@ -98,8 +98,8 @@ func (cli *CLI) sendMany(from string, to string, amount int) {
 
 	tx, err := core.CreateTransaction(from, to, amount, cli.Chain, "")
 	if err != nil {
-		fmt.Println(err);
-		return;
+		fmt.Println(err)
+		return
 	}
 
 	cli.Chain.AddBlock([]*core.Transaction{tx})

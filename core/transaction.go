@@ -145,8 +145,8 @@ func CreateTransaction(from string, to string, value int, bc *Blockchain, memo s
 	//查找账户可用的UTXO
 	findAmount, unspentOut := bc.findUnspentOutput(from, needValue)
 	if findAmount == -1 {
-		fmt.Printf("Can't find enough money from %s\n", from);
-		return nil, &blockchainError{"Balance inefficient"};
+		fmt.Printf("Can't find enough money from %s\n", from)
+		return nil, &blockchainError{"Balance inefficient"}
 	}
 	for txid, outs := range unspentOut {
 		txID, err := hex.DecodeString(txid)

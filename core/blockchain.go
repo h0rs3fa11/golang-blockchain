@@ -192,7 +192,7 @@ func (blockchain *Blockchain) FindTransaction(id []byte) (Transaction, error) {
 		hashInt.SetBytes(block.PrevBlockHash)
 
 		if big.NewInt(0).Cmp(&hashInt) == 0 {
-			break;
+			break
 		}
 	}
 
