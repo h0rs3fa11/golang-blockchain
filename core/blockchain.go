@@ -1,15 +1,16 @@
 package core
 
 import (
+	"bytes"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
 	"os"
-	"crypto/ecdsa"
-	"github.com/boltdb/bolt"
-	"bytes"
 	"time"
+
+	"github.com/boltdb/bolt"
 )
 
 const dbFile = "blockchain.db"
@@ -294,7 +295,6 @@ func (chain *Blockchain) PrintChain() {
 			} 
 			fmt.Println("----------transaction output----------")
 			//遍历vout
-			//TODO:为什么交易输出有两个连着的地址
 			// Vouts:
 			// 1
 			// 18QVsFU4TRgroxyDEuEx8Y4Ugn2CjdJjUT8

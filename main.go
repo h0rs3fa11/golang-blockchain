@@ -1,9 +1,9 @@
 package main
 
 import (
-    //"blockchain/core"
-    //"blockchain/client"
-    "blockchain/rpc"
+	//"blockchain/core"
+	//"blockchain/client"
+	"blockchain/rpcapi"
 )
 
 func main() {
@@ -13,5 +13,5 @@ func main() {
 
     //cli.Run()
     
-    rpc.StartRpcServer()
+    rpcapi.StartRpc()
 }
