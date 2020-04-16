@@ -4,4 +4,4 @@ blockchain.db
 .idea/*
 blockchain.db.lock
 blockchain.db
-
+__debug_bin
