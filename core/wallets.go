@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"fmt"
 )
 
 const walletFile = "wallet.dat"
@@ -40,11 +39,13 @@ func NewWallets() (*Wallets, error) {
 	return &wallets, nil
 }
 
-func (w *Wallets) CreateNewWallet() {
+func (w *Wallets) CreateNewWallet() string{
 	wallet := newWallet()
-	fmt.Printf("Address:%s\n", wallet.GetAddress())
-	w.WalletsMap[string(wallet.GetAddress())] = wallet
+
+	address := wallet.GetAddress()
+	w.WalletsMap[string(address)] = wallet
 	w.saveWallets()
+	return string(address)
 }
 
 func (w *Wallets) saveWallets() {

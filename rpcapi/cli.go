@@ -17,17 +17,6 @@ type CLI struct {
 	reply string
 }
 
-func (cli *CLI)printUsage() {
-	fmt.Println(`Usage:
-		getbalance -address ADDRESS - Get balance of ADDRESS 
-		createblockchain -address ADDRESS - Create a blockchain and send genesis block reward to ADDRESS
-		printchain - Print all the blocks of the blockchain
-		sendmany -from FROM -to TO -amount AMOUNT - Send AMOUNT of coins from FROM address to TO
-		listaddress list all address from wallet
-		createaddress create a new address
-	`)
-}
-
 func InitClient(address string) (*CLI, error){
 	client, err := rpc.DialHTTP("tcp", address)
 	if err != nil {
@@ -35,7 +24,7 @@ func InitClient(address string) (*CLI, error){
 	}
 
 	cli := CLI{
-		apiName: "",
+		apiName: ".",
 		rpcclient: client,
 	}
 
@@ -49,8 +38,17 @@ func (cli *CLI)validateArgs() {
 	}
 }
 
+func (cli *CLI)printUsage() {
+	cli.apiName += "Help"
+	err := cli.rpcclient.Call("Rpc"+ cli.apiName, "", &cli.reply)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(cli.reply);
+}
+
 func (cli *CLI)printChain() {
-	cli.apiName = "printChain"
+	cli.apiName += "PrintChain"
 	if core.DbExists() == false {
 		fmt.Println("Database not exist")
 		os.Exit(1)
@@ -62,63 +60,74 @@ func (cli *CLI)printChain() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(reply);
+	fmt.Println(cli.reply);
 }
 
 func (cli *CLI)getBlock(hash string) {
-	cli.apiName = "getBlock"
+	cli.apiName += "GetBlock"
 	
-	err := cli.rpcclient.Call("Rpc" + cli.apiName, hash, &cli.reply)
+	err := cli.rpcclient.Call("Rpc" + cli.apiName, &hash, &cli.reply)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(reply);
+	fmt.Println(cli.reply);
 }
 
 func (cli *CLI) sendMany(from string, to string, amount int) {
+	
 	fmt.Printf("from:%s\n", from)
 	fmt.Printf("to:%s\n", to)
 	fmt.Printf("amount:%d\n", amount)
 
-	tx, err := core.CreateTransaction(from, to, amount, Chain, "")
+	tx := Transfer{
+		from: from,
+		to: to,
+		amount: amount,
+	}
+
+	cli.apiName += "Sendmany"
+	
+	err := cli.rpcclient.Call("Rpc" + cli.apiName, &tx, &cli.reply)
 	if err != nil {
 		fmt.Println(err)
-		return
 	}
-
-	Chain.AddBlock([]*core.Transaction{tx})
+	fmt.Println(cli.reply);
 }
 
-func (cli *CLI) getBalance(address string) int {
-	txs := Chain.FindUnspentTX(address)
-	pubKey := core.GetPublickey(address)
-	balance := 0
-
-	for _, tx := range txs {
-		for _, out := range tx.Vout {
-			if out.IsLockWithKey(core.HashPubKey(pubKey)) {
-				balance += out.Value
-			}
-		}
+func (cli *CLI) getBalance(address string) {
+	cli.apiName += "Getbalance"
+	err := cli.rpcclient.Call("Rpc" + cli.apiName, address, &cli.reply)
+	if err != nil {
+		fmt.Println(err)
 	}
-
-	return balance
+	fmt.Println(cli.reply);
 }
 
 func (cli *CLI) listaddress() {
-	wallets, _ := core.NewWallets()
-	for address, _ := range wallets.WalletsMap {
-		fmt.Println(address)
+	cli.apiName += "Listaddress"
+	err := cli.rpcclient.Call("Rpc" + cli.apiName, "", &cli.reply)
+	if err != nil {
+		fmt.Println(err)
 	}
+	fmt.Println(cli.reply);
 }
 
 func (cli *CLI) createAddress() {
-	wallets, _ := core.NewWallets()
-	wallets.CreateNewWallet()
+	cli.apiName += "Createaddress"
+	err := cli.rpcclient.Call("Rpc" + cli.apiName, "", &cli.reply)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(cli.reply);
 }
 
 //默认的coinbase，setCoinbase
-func (cli *CLI)ParseCmdAndCall() {
+func (cli *CLI)ParseCmdAndCall(address string) {
+	cli, err := InitClient(address)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	cli.validateArgs()
 
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
@@ -167,7 +176,6 @@ func (cli *CLI)ParseCmdAndCall() {
 				log.Panic(err)
 			}
 		default:
-			cli.apiName = "Help"
 			cli.printUsage()
 			os.Exit(1)
 	}
@@ -177,26 +185,26 @@ func (cli *CLI)ParseCmdAndCall() {
 	}
 
 	if getBlockCmd.Parsed() {
-		getBlock(*getBlockData)
+		cli.getBlock(*getBlockData)
 	}
 	if getBalanceCmd.Parsed() {
 		if *getBalanceData == "" {
-			printUsage()
+			cli.printUsage()
 			os.Exit(1)
 		}
 
-		fmt.Printf("%s balance\n%d\n", *getBalanceData, getBalance(*getBalanceData))
+		//fmt.Printf("%s balance\n%d\n", *getBalanceData, cli.getBalance(*getBalanceData))
 	}
 
 	if sendManyCmd.Parsed() {
-		sendMany(*sendFrom, *sendTo, *sendAmount)
+		cli.sendMany(*sendFrom, *sendTo, *sendAmount)
 	}
 
 	if addresslistCmd.Parsed() {
-		listaddress()
+		cli.listaddress()
 	}
 
 	if createAddrCmd.Parsed() {
-		createAddress()
+		cli.createAddress()
 	}
 }

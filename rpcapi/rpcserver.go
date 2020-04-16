@@ -19,8 +19,9 @@ var RPC_PORT = "8332"
 // 如果没有参数就调用Help信息
 // 有参数就解析参数，调用对应API
 
-func StartRpc() {
+func StartRpc(bc *core.Blockchain) {
 	que := new(Rpc)
+	que.bc = *bc
 	rpc.Register(que)
 	rpc.HandleHTTP()
 	address := RPC_ADDRESS+":"+RPC_PORT
@@ -35,6 +36,6 @@ func StartRpc() {
 	if err != nil {
 		fmt.Printf("Listen error:%s", err)
 	}
-	cli.ParseCmdAndCall()
+	cli.ParseCmdAndCall(address)
 
 }

@@ -10,6 +10,12 @@ import (
 	"github.com/boltdb/bolt"
 )
 
+type Transfer struct {
+	from string
+	to string
+	amount int
+}
+
 func (r *Rpc) Help(arg string, reply *string) error {
 	*reply = fmt.Sprintln(`Usage:
 		getbalance -address ADDRESS - Get balance of ADDRESS 
@@ -22,15 +28,15 @@ func (r *Rpc) Help(arg string, reply *string) error {
 	return nil
 }
 
-func (r *Rpc) printChain(arg string, reply *string) error {
+func (r *Rpc) PrintChain(args string, reply *string) error {
 	r.bc.PrintChain()
 	*reply = fmt.Sprintln("success")
 	return nil
 }
 
-func (r *Rpc) getBlock(arg string, reply *string) error {
+func (r *Rpc) Getblock(args string, reply *string) error {
 
-	hashByte, err := hex.DecodeString(hash)
+	hashByte, err := hex.DecodeString(args)
 
 	if err != nil {
 		log.Panic(err)
@@ -44,18 +50,20 @@ func (r *Rpc) getBlock(arg string, reply *string) error {
 
 		block := core.DeserializeBlock(blockBytes)
 
-		*reply := fmt.Sprintf("PrevBlockHash：%x \nTimestamp：%s \nHash：%x \nNonce：%d \n", block.PrevBlockHash, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
-		// TODO 怎么输出完整的reply
+		*reply = fmt.Sprintf("PrevBlockHash：%x \nTimestamp：%s \nHash：%x \nNonce：%d \n", block.PrevBlockHash, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
+
 		for _, tx := range block.Transaction {
 			fmt.Printf("Transaction id: %x\n", tx.ID)
-
-			// for _, in := range tx.Vin {
-			// 	fmt.Printf("Transaction Input:\ntxid: %x\nout index: %d\nscriptSig:%s\n", in.Txid, in.Vout, in.ScriptSig)
-			// }
-			// fmt.Println()
-			// for _, out := range tx.Vout {
-			// 	fmt.Printf("Transaction Output:\nvalue: %d\nscriptPubKey: %s\n", out.Value, out.ScriptPubKey)
-			// }
+			*reply += fmt.Sprintf("Transaction id: %x\n", tx.ID)
+			for _, in := range tx.Vin {
+				//fmt.Printf("Transaction Input:\ntxid: %x\nout index: %d\nscriptSig:%s\n", in.Txid, in.Vout, in.ScriptSig)
+				*reply += fmt.Sprintf("Transaction Input:\ntxid: %x\nout index: %d\nscriptSig:%s\n", in.Txid, in.Vout, in.Signature)
+			}
+			//fmt.Println()
+			for _, out := range tx.Vout {
+				//fmt.Printf("Transaction Output:\nvalue: %d\nscriptPubKey: %s\n", out.Value, out.ScriptPubKey)
+				*reply += fmt.Sprintf("Transaction Output:\nvalue: %d\nscriptPubKey: %s\n", out.Value, out.PubKeyHash)
+			}
 		}
 
 		fmt.Println()
@@ -66,5 +74,47 @@ func (r *Rpc) getBlock(arg string, reply *string) error {
 	if err != nil {
 		log.Panic(err)
 	}
+	return nil
+}
 
+func (r *Rpc) Sendmany(args *Transfer, reply *string) error {
+	tx, err := core.CreateTransaction(args.from, args.to, args.amount, &r.bc, "")
+	if err != nil {
+		*reply = fmt.Sprintln(err)
+	}
+
+	r.bc.AddBlock([]*core.Transaction{tx})
+	return nil
+}
+
+func (r *Rpc) Getbalance(args string, reply *int) error {
+	txs := r.bc.FindUnspentTX(args)
+	pubKey := core.GetPublickey(args)
+	balance := 0
+
+	for _, tx := range txs {
+		for _, out := range tx.Vout {
+			if out.IsLockWithKey(core.HashPubKey(pubKey)) {
+				balance += out.Value
+			}
+		}
+	}
+
+	*reply = balance
+	return nil
+}
+
+func (r *Rpc) Listaddress(args string, reply *string) error {
+	wallets, _ := core.NewWallets()
+	for address, _ := range wallets.WalletsMap {
+		*reply += fmt.Sprintf("%s\n", address)
+	}
+	return nil
+}
+
+func (r *Rpc) Createaddress(args string, reply *string) error {
+	wallets, _ := core.NewWallets()
+	*reply = wallets.CreateNewWallet()
+	
+	return nil
 }
