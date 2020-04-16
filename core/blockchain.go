@@ -31,8 +31,16 @@ func (blockchain *Blockchain) Iterator() *ChainIterator {
 func (blockchain *Blockchain) AddBlock(txs []*Transaction) {
 	var txToBlock []*Transaction
 
-	//create coinbase transction	
-	txToBlock = append(txToBlock, createCoinbaseTx(HashPubKey(GetPublickey(blockchain.Params.Miner)), "", blockchain.Params))
+	//create coinbase transction
+	if blockchain.Params.Miner == "" {
+		blockchain.Params.setCoinbase()
+	}
+	pubkey, err := GetPublickey(blockchain.Params.Miner)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	txToBlock = append(txToBlock, createCoinbaseTx(HashPubKey(pubkey), "", blockchain.Params))
 	for _, transaction := range txs {
 		txToBlock = append(txToBlock, transaction)
 	}
@@ -59,7 +67,7 @@ func (blockchain *Blockchain) AddBlock(txs []*Transaction) {
 	//create new block
 	block = NewBlock(txToBlock, block.Hash, block.Height + 1)
 
-	err := blockchain.Database.Update(func(tx *bolt.Tx) error {
+	err = blockchain.Database.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(BlocksBucket))
 
 		err := b.Put(block.Hash, block.Serialize())
@@ -87,7 +95,11 @@ func (blockchain *Blockchain) FindUnspentTX(address string) []Transaction {
 	bci := blockchain.Iterator()
 	var hashInt big.Int
 
-	pubKey := GetPublickey(address)
+	pubKey, err := GetPublickey(address)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	for {
 		block := bci.Next()
 
@@ -137,7 +149,10 @@ func (blockchain *Blockchain) findUnspentOutput(address string, amount int) (int
 	unspentOutputs := make(map[string][]int)
 	unspentTx := blockchain.FindUnspentTX(address)
 	accumulated := 0
-	pubKey := GetPublickey(address)
+	pubKey, err := GetPublickey(address)
+	if err != nil {
+		fmt.Println(err)
+	}
 
 Work:
 	for _, tx := range unspentTx {
@@ -218,9 +233,8 @@ func NewBlockChain() *Blockchain {
 	var tip []byte
 
 	//暂时 后面写成配置文件
-	params := Chainparams{}
-	params.init()
-
+	params := GetConfig()
+	
 	wallets, err := NewWallets()
 	
 	db, err := bolt.Open(dbFile, 0600, nil)
@@ -234,11 +248,11 @@ func NewBlockChain() *Blockchain {
 		if b == nil {
 			fmt.Println("No existing blockchain found. Create a new one ...")
 
-			wallets.CreateNewWallet()
+			coinbase := wallets.CreateNewWallet()
 
-			params.setCoinbase()
+			params.Updateparams(params.Miner, coinbase)
 
-			blockchain := Blockchain{nil, nil, params}
+			blockchain := Blockchain{nil, nil, *params}
 			genesisBlock := NewGenesisBlock(&blockchain)
 
 			b, err := tx.CreateBucket([]byte(BlocksBucket))
@@ -258,8 +272,7 @@ func NewBlockChain() *Blockchain {
 
 			tip = genesisBlock.Hash
 		} else {
-			// TODO: Check if the address in the wallet is on the chain
-			params.setCoinbase()
+			//params.setCoinbase()
 			tip = b.Get([]byte("l"))
 		}
 
@@ -269,7 +282,7 @@ func NewBlockChain() *Blockchain {
 		log.Panic(err)
 	}
 
-	return &Blockchain{tip, db, params}
+	return &Blockchain{tip, db, *params}
 }
 
 func (chain *Blockchain) PrintChain() {
@@ -291,22 +304,13 @@ func (chain *Blockchain) PrintChain() {
 			for _, txin := range tx.Vin {
 				fmt.Printf("Vin transaction ID: %x\n", txin.Txid)
 				fmt.Printf("Vin Vout: %d\n", txin.Vout)
-				//fmt.Printf("Script Sig: %s\n", txin.ScriptSig)
 			} 
 			fmt.Println("----------transaction output----------")
-			//遍历vout
-			// Vouts:
-			// 1
-			// 18QVsFU4TRgroxyDEuEx8Y4Ugn2CjdJjUT8
-			// 1DUe77qTXt6eg6kvxD383XuYsfa9ibPJQg1
-			// 1FnaS7YLYBxWHCuYHLc7DQHFA8Tg6D5G1Nr1W7Nj9Xif25dJSi75jD6JRRe9J5NhLHMkAAeAsmCXtdceod9zpEjVxTi93
 			fmt.Println("Vouts:")
 			for _, txout := range tx.Vout {
 				fmt.Println(txout.Value)
 				fmt.Printf("%s\n",GetAddressFromPubkey(txout.PubKeyHash))
 			}
-			fmt.Println("----------transaction fee----------")
-			//fmt.Printf("%d",)
 		}
 		fmt.Println()
 		fmt.Println("---------------------------------------")

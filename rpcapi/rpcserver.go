@@ -15,10 +15,6 @@ type Rpc struct {
 var RPC_ADDRESS = "127.0.0.1"
 var RPC_PORT = "8332"
 
-// TODO 接收命令行参数
-// 如果没有参数就调用Help信息
-// 有参数就解析参数，调用对应API
-
 func StartRpc(bc *core.Blockchain) {
 	que := new(Rpc)
 	que.bc = *bc
@@ -37,5 +33,5 @@ func StartRpc(bc *core.Blockchain) {
 		fmt.Printf("Listen error:%s", err)
 	}
 	cli.ParseCmdAndCall(address)
-
+	fmt.Println("Main process exit")
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/gob"
+	"fmt"
 	"log"
 	"time"
 )
@@ -75,6 +76,10 @@ func NewBlock(transaction []*Transaction, prevBlockHash []byte, height int) *Blo
 func NewGenesisBlock(bc *Blockchain) *Block {
 	// Initialize Genesis Transaction
 	//获取钱包的地址
-	coinbaseTx := createCoinbaseTx(HashPubKey(GetPublickey(bc.Params.Miner)), "Reward for mining", bc.Params)
+	pubkey, err := GetPublickey(bc.Params.Miner)
+	if err != nil {
+		fmt.Println(err)
+	}
+	coinbaseTx := createCoinbaseTx(HashPubKey(pubkey), "Reward for mining", bc.Params)
 	return NewBlock([]*Transaction{coinbaseTx}, []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, 1)
 }

@@ -5,21 +5,30 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/boltdb/bolt"
 )
 
 type Transfer struct {
-	from string
-	to string
-	amount int
+	From string
+	To string
+	Amount int
+}
+
+func NewTransfer(from string, to string, amount int) (*Transfer) {
+	tx := Transfer{
+		From: from,
+		To: to,
+		Amount: amount,
+	}
+	return &tx
 }
 
 func (r *Rpc) Help(arg string, reply *string) error {
 	*reply = fmt.Sprintln(`Usage:
 		getbalance -address ADDRESS - Get balance of ADDRESS 
-		createblockchain -address ADDRESS - Create a blockchain and send genesis block reward to ADDRESS
 		printchain - Print all the blocks of the blockchain
 		sendmany -from FROM -to TO -amount AMOUNT - Send AMOUNT of coins from FROM address to TO
 		listaddress list all address from wallet
@@ -78,7 +87,7 @@ func (r *Rpc) Getblock(args string, reply *string) error {
 }
 
 func (r *Rpc) Sendmany(args *Transfer, reply *string) error {
-	tx, err := core.CreateTransaction(args.from, args.to, args.amount, &r.bc, "")
+	tx, err := core.CreateTransaction(args.From, args.To, args.Amount, &r.bc, "")
 	if err != nil {
 		*reply = fmt.Sprintln(err)
 	}
@@ -87,9 +96,13 @@ func (r *Rpc) Sendmany(args *Transfer, reply *string) error {
 	return nil
 }
 
-func (r *Rpc) Getbalance(args string, reply *int) error {
+func (r *Rpc) Getbalance(args string, reply *string) error {
 	txs := r.bc.FindUnspentTX(args)
-	pubKey := core.GetPublickey(args)
+	pubKey, err := core.GetPublickey(args)
+	if err != nil {
+		*reply = fmt.Sprintln(err)
+		return nil
+	}
 	balance := 0
 
 	for _, tx := range txs {
@@ -100,7 +113,7 @@ func (r *Rpc) Getbalance(args string, reply *int) error {
 		}
 	}
 
-	*reply = balance
+	*reply = strconv.Itoa(balance)
 	return nil
 }
 

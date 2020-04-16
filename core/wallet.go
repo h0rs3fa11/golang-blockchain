@@ -5,6 +5,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"log"
 
 	"golang.org/x/crypto/ripemd160"
@@ -68,7 +69,12 @@ func checksum(payload []byte) []byte {
 	return secondSHA[:addressChecksumLen]
 }
 
-func GetPublickey(address string) []byte {
+func GetPublickey(address string) ([]byte, error) {
 	wallets,_ := NewWallets()
-	return wallets.WalletsMap[address].PublicKey
+	pubkey, ok := wallets.WalletsMap[address]
+	if ok != true {
+		return nil, &blockchainError{fmt.Sprintf("Can't find %s in this wallet", address)}
+	}
+
+	return pubkey.PublicKey, nil
 }

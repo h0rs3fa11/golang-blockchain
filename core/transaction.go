@@ -2,16 +2,16 @@ package core
 
 import (
 	"bytes"
-	"log"
-	"encoding/gob"
-	"crypto/sha256"
-	"encoding/hex"
 	"crypto/ecdsa"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/gob"
+	"encoding/hex"
+	"log"
 
-	"math/big"
 	"crypto/elliptic"
 	"fmt"
+	"math/big"
 	"os"
 )
 
@@ -133,6 +133,8 @@ func createCoinbaseTx(pubKeyHash []byte, memo string, params Chainparams) *Trans
 	return &tx
 }
 
+// TODO 关于coinbase地址的设置
+// TODO 交易池机制
 func CreateTransaction(from string, to string, value int, bc *Blockchain, memo string) (*Transaction, error) {
 
 	//var feeOutput &TXOutput{}
@@ -161,12 +163,18 @@ func CreateTransaction(from string, to string, value int, bc *Blockchain, memo s
 		}
 	}
 	
-	topubKey := GetPublickey(to)
+	topubKey, err := GetPublickey(to)
+	if err != nil {
+		fmt.Println(err)
+	}
 	if topubKey == nil {
 		log.Panic("Can't find this address")
 	}
 
-	minerPubkey := GetPublickey(getCoinbase())
+	minerPubkey, err := GetPublickey(getCoinbase())
+	if err != nil {
+		fmt.Println(err)
+	}
 	if minerPubkey == nil {
 		log.Panic("Can't find this address")
 	}
@@ -178,12 +186,12 @@ func CreateTransaction(from string, to string, value int, bc *Blockchain, memo s
 	change := findAmount - value
 	if change > bc.Params.Fee {
 		changeOutput := &TXOutput{change - bc.Params.Fee, HashPubKey(wallet.PublicKey)}
-		feeOutput := &TXOutput{bc.Params.Fee, minerPubkey}
+		feeOutput := &TXOutput{bc.Params.Fee, HashPubKey(minerPubkey)}
 		tx.Vout = append(tx.Vout, changeOutput)
 		tx.Vout = append(tx.Vout, feeOutput)
 
 	} else if change == bc.Params.Fee {
-		feeOutput := &TXOutput{bc.Params.Fee, minerPubkey}
+		feeOutput := &TXOutput{bc.Params.Fee, HashPubKey(minerPubkey)}
 		tx.Vout = append(tx.Vout, feeOutput)
 	} else {
 		fmt.Println("Transaction fee is not enough!\n")

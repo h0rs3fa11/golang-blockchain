@@ -79,11 +79,7 @@ func (cli *CLI) sendMany(from string, to string, amount int) {
 	fmt.Printf("to:%s\n", to)
 	fmt.Printf("amount:%d\n", amount)
 
-	tx := Transfer{
-		from: from,
-		to: to,
-		amount: amount,
-	}
+	tx := NewTransfer(from, to, amount)
 
 	cli.apiName += "Sendmany"
 	
@@ -192,7 +188,7 @@ func (cli *CLI)ParseCmdAndCall(address string) {
 			cli.printUsage()
 			os.Exit(1)
 		}
-
+		cli.getBalance(*getBalanceData)
 		//fmt.Printf("%s balance\n%d\n", *getBalanceData, cli.getBalance(*getBalanceData))
 	}
 
