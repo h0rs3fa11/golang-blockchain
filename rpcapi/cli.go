@@ -44,7 +44,7 @@ func (cli *CLI)printUsage() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(cli.reply);
+	fmt.Println(cli.reply)
 }
 
 func (cli *CLI)printChain() {
@@ -60,7 +60,7 @@ func (cli *CLI)printChain() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(cli.reply);
+	fmt.Println(cli.reply)
 }
 
 func (cli *CLI)getBlock(hash string) {
@@ -70,9 +70,10 @@ func (cli *CLI)getBlock(hash string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(cli.reply);
+	fmt.Println(cli.reply)
 }
 
+//TODO：转账后UTXO计算有问题
 func (cli *CLI) sendMany(from string, to string, amount int) {
 	
 	fmt.Printf("from:%s\n", from)
@@ -87,7 +88,7 @@ func (cli *CLI) sendMany(from string, to string, amount int) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(cli.reply);
+	fmt.Println(cli.reply)
 }
 
 func (cli *CLI) getBalance(address string) {
@@ -96,7 +97,7 @@ func (cli *CLI) getBalance(address string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(cli.reply);
+	fmt.Println(cli.reply)
 }
 
 func (cli *CLI) listaddress() {
@@ -105,7 +106,7 @@ func (cli *CLI) listaddress() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(cli.reply);
+	fmt.Println(cli.reply)
 }
 
 func (cli *CLI) createAddress() {
@@ -114,7 +115,16 @@ func (cli *CLI) createAddress() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(cli.reply);
+	fmt.Println(cli.reply)
+}
+
+func (cli *CLI) pubkeyHashToAddress(hash string) {
+	cli.apiName += "PubkeyHashToAddress"
+	err := cli.rpcclient.Call("Rpc" + cli.apiName, "", &cli.reply)
+	if err!=nil{
+		fmt.Println(err)
+	}
+	fmt.Println(cli.reply)
 }
 
 //默认的coinbase，setCoinbase
@@ -129,9 +139,11 @@ func (cli *CLI)ParseCmdAndCall(address string) {
 	printChainCmd := flag.NewFlagSet("printchain", flag.ExitOnError)
 	addresslistCmd := flag.NewFlagSet("listaddress", flag.ExitOnError)
 	getBlockCmd := flag.NewFlagSet("getblock", flag.ExitOnError)
+	//TODO getblockhash -height 2
 	getBalanceCmd := flag.NewFlagSet("getbalance", flag.ExitOnError)
 	sendManyCmd := flag.NewFlagSet("sendmany", flag.ExitOnError)
 	createAddrCmd := flag.NewFlagSet("createaddress", flag.ExitOnError)
+	pubKeyHashToAddrCmd := flag.NewFlagSet("pubkeyhashtoaddress", flag.ExitOnError)
 
 	//defines a flag with specified name
 	getBlockData := getBlockCmd.String("hash", "", "Block hash")
@@ -139,6 +151,7 @@ func (cli *CLI)ParseCmdAndCall(address string) {
 	sendFrom := sendManyCmd.String("from", "", "from address")
 	sendTo := sendManyCmd.String("to", "", "to address")
 	sendAmount := sendManyCmd.Int("amount", 0, "the amount you want to send")
+	pubkeyHash := pubKeyHashToAddrCmd.String("pubkeyhash", "", "public key hash")
 
 	switch os.Args[1] {
 		case "printchain":
@@ -169,6 +182,11 @@ func (cli *CLI)ParseCmdAndCall(address string) {
 		case "createaddress":
 			err := createAddrCmd.Parse(os.Args[2:])
 			if err != nil {
+				log.Panic(err)
+			}
+		case "pubkeyhashtoaddress":
+			err:=pubKeyHashToAddrCmd.Parse(os.Args[2:])
+			if err!=nil{
 				log.Panic(err)
 			}
 		default:
@@ -202,5 +220,9 @@ func (cli *CLI)ParseCmdAndCall(address string) {
 
 	if createAddrCmd.Parsed() {
 		cli.createAddress()
+	}
+
+	if pubKeyHashToAddrCmd.Parsed() {
+		cli.pubkeyHashToAddress(*pubkeyHash)
 	}
 }

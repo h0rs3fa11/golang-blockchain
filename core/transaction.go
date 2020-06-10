@@ -133,7 +133,6 @@ func createCoinbaseTx(pubKeyHash []byte, memo string, params Chainparams) *Trans
 	return &tx
 }
 
-// TODO 关于coinbase地址的设置
 // TODO 交易池机制
 func CreateTransaction(from string, to string, value int, bc *Blockchain, memo string) (*Transaction, error) {
 

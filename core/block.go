@@ -13,15 +13,10 @@ var blockNumber = 0
 
 type Block struct {
 	Height int
-	// timestamp
 	Timestamp int64
-	//previous hash
 	PrevBlockHash []byte
-	//transaction data
 	Transaction []*Transaction
-	//block hash
 	Hash []byte
-
 	Nonce int
 }
 

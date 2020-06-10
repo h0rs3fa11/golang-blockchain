@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math/big"
 	"strconv"
-	"time"
 
 	"github.com/boltdb/bolt"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type Transfer struct {
@@ -28,18 +29,37 @@ func NewTransfer(from string, to string, amount int) (*Transfer) {
 
 func (r *Rpc) Help(arg string, reply *string) error {
 	*reply = fmt.Sprintln(`Usage:
-		getbalance -address ADDRESS - Get balance of ADDRESS 
-		printchain - Print all the blocks of the blockchain
-		sendmany -from FROM -to TO -amount AMOUNT - Send AMOUNT of coins from FROM address to TO
-		listaddress list all address from wallet
-		createaddress create a new address
+	getbalance -address ADDRESS - Get balance of ADDRESS 
+	printchain - Print all the blocks of the blockchain
+	sendmany -from FROM -to TO -amount AMOUNT - Send AMOUNT of coins from FROM address to TO
+	listaddress list all address from wallet
+	createaddress create a new address
+	pubkeyhashtoaddress -pubkeyhash PUBLIC_KEY_HASH convert public key to address
 	`)
 	return nil
 }
 
 func (r *Rpc) PrintChain(args string, reply *string) error {
-	r.bc.PrintChain()
-	*reply = fmt.Sprintln("success")
+	blockchainIterator := r.bc.Iterator()
+	blockInfo := &core.Block{}
+	for {
+		blockInfo = blockchainIterator.Next()
+		
+		blockJSON, err := jsoniter.MarshalIndent(blockInfo, "", "    ")
+		if err != nil {
+			*reply = fmt.Sprintln("Json marshal failed");
+			return nil
+		}
+		*reply += fmt.Sprintln(string(blockJSON))
+
+		var hashInt big.Int
+		hashInt.SetBytes(blockInfo.PrevBlockHash)
+
+		if hashInt.Cmp(big.NewInt(0)) == 0 {
+			break
+		}
+	}
+
 	return nil
 }
 
@@ -59,23 +79,12 @@ func (r *Rpc) Getblock(args string, reply *string) error {
 
 		block := core.DeserializeBlock(blockBytes)
 
-		*reply = fmt.Sprintf("PrevBlockHash：%x \nTimestamp：%s \nHash：%x \nNonce：%d \n", block.PrevBlockHash, time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"), block.Hash, block.Nonce)
-
-		for _, tx := range block.Transaction {
-			fmt.Printf("Transaction id: %x\n", tx.ID)
-			*reply += fmt.Sprintf("Transaction id: %x\n", tx.ID)
-			for _, in := range tx.Vin {
-				//fmt.Printf("Transaction Input:\ntxid: %x\nout index: %d\nscriptSig:%s\n", in.Txid, in.Vout, in.ScriptSig)
-				*reply += fmt.Sprintf("Transaction Input:\ntxid: %x\nout index: %d\nscriptSig:%s\n", in.Txid, in.Vout, in.Signature)
-			}
-			//fmt.Println()
-			for _, out := range tx.Vout {
-				//fmt.Printf("Transaction Output:\nvalue: %d\nscriptPubKey: %s\n", out.Value, out.ScriptPubKey)
-				*reply += fmt.Sprintf("Transaction Output:\nvalue: %d\nscriptPubKey: %s\n", out.Value, out.PubKeyHash)
-			}
+		blockJSON, err := jsoniter.MarshalIndent(block, "", "    ")
+		if err != nil {
+			*reply = fmt.Sprintln("Json marshal failed");
+			return nil
 		}
-
-		fmt.Println()
+		*reply += fmt.Sprintln(string(blockJSON))
 
 		return nil
 	})
@@ -129,5 +138,11 @@ func (r *Rpc) Createaddress(args string, reply *string) error {
 	wallets, _ := core.NewWallets()
 	*reply = wallets.CreateNewWallet()
 	
+	return nil
+}
+
+func (r *Rpc) PubkeyHashToAddress(args string, reply *string) error {
+	*reply = string(core.GetAddressFromPubkey([]byte(args)))
+
 	return nil
 }

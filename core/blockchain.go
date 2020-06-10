@@ -8,7 +8,6 @@ import (
 	"log"
 	"math/big"
 	"os"
-	"time"
 
 	"github.com/boltdb/bolt"
 )
@@ -87,6 +86,7 @@ func (blockchain *Blockchain) AddBlock(txs []*Transaction) {
 	}
 }
 
+// TODO 修复findunspentTX bug
 //Find Transaction contains UTXO of address
 func (blockchain *Blockchain) FindUnspentTX(address string) []Transaction {
 	var unspentTXs []Transaction
@@ -108,6 +108,14 @@ func (blockchain *Blockchain) FindUnspentTX(address string) []Transaction {
 			//fmt.Printf("TransactionHash:%x\n", transaction.ID)
 			txID := hex.EncodeToString(transaction.ID)
 
+			//如果当前交易不是coinbase，遍历transaction.Vin，将input添加到spentTXOs中
+			if transaction.isCoinbase() == false {
+				for _, in := range transaction.Vin {
+					inTxID := hex.EncodeToString(in.Txid)
+					spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Vout)
+				}
+			}
+
 		Outputs:
 			//遍历交易输出
 			for outIdx, out := range transaction.Vout {
@@ -122,14 +130,6 @@ func (blockchain *Blockchain) FindUnspentTX(address string) []Transaction {
 				//如果已花费就跳过，没有就检查unlock，然后添加到unspentTXs中
 				if out.IsLockWithKey(HashPubKey(pubKey)) {
 					unspentTXs = append(unspentTXs, *transaction)
-				}
-			}
-
-			//如果当前交易不是coinbase，遍历transaction.Vin，将input添加到spentTXOs中
-			if transaction.isCoinbase() == false {
-				for _, in := range transaction.Vin {
-					inTxID := hex.EncodeToString(in.Txid)
-					spentTXOs[inTxID] = append(spentTXOs[inTxID], in.Vout)
 				}
 			}
 		}
@@ -173,6 +173,27 @@ Work:
 		return -1, nil
 	}
 	return accumulated, unspentOutputs
+}
+
+//find All UTXO
+func (blockchain *Blockchain) findAllUnspentOutput(address string) int {
+	unspentTx := blockchain.FindUnspentTX(address)
+	accumulated := 0
+	pubKey, err := GetPublickey(address)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, tx := range unspentTx {
+
+		for _, out := range tx.Vout {
+			if out.IsLockWithKey(HashPubKey(pubKey)) {
+				accumulated += out.Value
+			}
+		}
+	}
+
+	return accumulated
 }
 
 func (blockchain *Blockchain) SignTransaction(tx *Transaction, privKey ecdsa.PrivateKey) {
@@ -283,45 +304,6 @@ func NewBlockChain() *Blockchain {
 	}
 
 	return &Blockchain{tip, db, *params}
-}
-
-func (chain *Blockchain) PrintChain() {
-
-	blockchainIterator := chain.Iterator()
-
-	for {
-		block := blockchainIterator.Next()
-
-		fmt.Printf("Height:%d\n", block.Height)
-		fmt.Printf("PrevBlockHash：%x \n", block.PrevBlockHash)
-		fmt.Printf("Timestamp：%s \n", time.Unix(block.Timestamp, 0).Format("2006-01-02 03:04:05 PM"))
-		fmt.Printf("Hash：%x \n", block.Hash)
-		fmt.Printf("Nonce：%d \n", block.Nonce)
-		for _, tx := range block.Transaction {
-			fmt.Printf("\nTransaction id: %x\n", tx.ID)
-			//遍历vin
-			fmt.Println("----------transaction input----------")
-			for _, txin := range tx.Vin {
-				fmt.Printf("Vin transaction ID: %x\n", txin.Txid)
-				fmt.Printf("Vin Vout: %d\n", txin.Vout)
-			} 
-			fmt.Println("----------transaction output----------")
-			fmt.Println("Vouts:")
-			for _, txout := range tx.Vout {
-				fmt.Println(txout.Value)
-				fmt.Printf("%s\n",GetAddressFromPubkey(txout.PubKeyHash))
-			}
-		}
-		fmt.Println()
-		fmt.Println("---------------------------------------")
-		
-		var hashInt big.Int
-		hashInt.SetBytes(block.PrevBlockHash)
-
-		if hashInt.Cmp(big.NewInt(0)) == 0 {
-			break
-		}
-	}
 }
 
 func DbExists() bool {
